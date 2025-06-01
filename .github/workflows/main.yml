@@ -29,8 +29,10 @@ jobs:
 
       - name: Extract version
         id: extract
+        shell: bash
         run: |
-          echo "VERSION=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
