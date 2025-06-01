@@ -30,11 +30,16 @@ jobs:
           NEW_VER=$(npm version patch --no-git-tag-version)
           echo "VERSION=$NEW_VER" >> $GITHUB_OUTPUT
 
+      - name: Configure Git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+
       - name: Commit version bump
-        uses: EndBug/add-and-commit@v9
-        with:
-          message: "ci: bump version to ${{ steps.bump.outputs.VERSION }}"
-          add: 'package.json, package-lock.json'
+        run: |
+          git add package.json package-lock.json
+          git commit -m "ci: bump version to ${{ steps.bump.outputs.VERSION }}"
+          git push
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
