@@ -3,7 +3,7 @@ name: Build & Publish to ECR
 on:
   push:
     branches:
-      - main
+      - main   # 1. Netleştir: hangi branch?
 
 jobs:
   version-and-publish:
