@@ -5,18 +5,21 @@ on:
     branches:
       - main
 
+env:
+  ECR_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECR_REGION:  ${{ secrets.AWS_REGION }}
+  ECR_REPO:    ${{ secrets.ECR_REPO_NAME }}
+
 jobs:
-  version-and-publish:
+  build-and-publish:
     runs-on: ubuntu-latest
-    env:
-      ECR_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
-      ECR_REGION: ${{ secrets.AWS_REGION }}
-      ECR_REPO: ${{ secrets.ECR_REPO_NAME }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -24,42 +27,29 @@ jobs:
           node-version: '22.15.1'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Bump patch version
-        id: bump
+      - name: Extract version
+        id: extract
         run: |
-          NEW_VER=$(npm version patch --no-git-tag-version)
-          echo "VERSION=$NEW_VER" >> $GITHUB_OUTPUT
-
-      - name: Configure Git
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-
-      - name: Commit version bump
-        run: |
-          git add package.json package-lock.json
-          git commit -m "ci: bump version to ${{ steps.bump.outputs.VERSION }}"
-          git push
+          echo "VERSION=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region:            ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
-        with:
-          registry-type: private
 
       - name: Build Docker image
         run: |
-          IMAGE_URI=${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:${{ steps.bump.outputs.VERSION }}
+          IMAGE_URI=${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:${{ steps.extract.outputs.VERSION }}
           docker build -t $IMAGE_URI .
           docker tag $IMAGE_URI ${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:latest
 
       - name: Push to ECR
         run: |
-          docker push ${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:${{ steps.bump.outputs.VERSION }}
+          IMAGE_URI=${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:${{ steps.extract.outputs.VERSION }}
+          docker push $IMAGE_URI
           docker push ${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:latest
