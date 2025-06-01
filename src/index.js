@@ -26,7 +26,7 @@ async function generateRSSFile() {
 generateRSSFile();
 
 // Her 58 dakikada bir güncelleme (cron ile)
-cron.schedule('*/58 * * * *', () => {
+cron.schedule('15 9,10,12,16 * * *', () => {
     generateRSSFile();
 });
 
