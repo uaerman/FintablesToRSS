@@ -3,7 +3,7 @@ name: Build & Publish to ECR
 on:
   push:
     branches:
-      - main   # 1. Netleştir: hangi branch?
+      - main
 
 jobs:
   version-and-publish:
@@ -51,6 +51,3 @@ jobs:
         run: |
           docker push ${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:${{ steps.bump.outputs.VERSION }}
           docker push ${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:latest
-
-      - name: Output image URI
-        run: echo "Image published: ${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:${{ steps.bump.outputs.VERSION }}"
