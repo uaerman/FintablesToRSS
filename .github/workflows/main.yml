@@ -3,28 +3,29 @@ name: Build & Publish to ECR
 on:
   push:
     branches:
-      - main   # 1. Netleştir: hangi branch?
+      - main
 
 jobs:
   version-and-publish:
     runs-on: ubuntu-latest
     env:
       ECR_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
-      ECR_REGION:  ${{ secrets.AWS_REGION }}
-      ECR_REPO:    ${{ secrets.ECR_REPO_NAME }}
+      ECR_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REPO: ${{ secrets.ECR_REPO_NAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0    # tüm commit geçmişi gerekebilir versiyon commit’i için
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '22.15.1'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Bump patch version
+        id: bump
         run: |
           NEW_VER=$(npm version patch --no-git-tag-version)
           echo "VERSION=$NEW_VER" >> $GITHUB_OUTPUT
@@ -35,6 +36,13 @@ jobs:
           message: "ci: bump version to ${{ steps.bump.outputs.VERSION }}"
           add: 'package.json, package-lock.json'
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
         with:
@@ -44,7 +52,6 @@ jobs:
         run: |
           IMAGE_URI=${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:${{ steps.bump.outputs.VERSION }}
           docker build -t $IMAGE_URI .
-          # Optional: latest etiketi de
           docker tag $IMAGE_URI ${ECR_ACCOUNT}.dkr.ecr.${ECR_REGION}.amazonaws.com/${ECR_REPO}:latest
 
       - name: Push to ECR
