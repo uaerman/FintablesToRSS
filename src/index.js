@@ -54,7 +54,7 @@ app.get(['/rss.xml', '/'], async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Sunucu ${PORT} portunda başladı, http://localhost:${PORT}/rss.xml adresinden erişebilirsiniz.`);
+    console.log(`Sunucu ${PORT} portunda başladı.`);
 });
 
 // İşlem sonunda
